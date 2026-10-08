@@ -22,7 +22,7 @@ No necesitás leer todo. Necesitás saber dónde mirar cuando lo necesitás.
 
 ---
 
-## Documentación oficial (empiezá por acá)
+## Documentación oficial (empezá por acá)
 
 | Recurso | Qué es | Por qué te sirve |
 |---------|--------|------------------|

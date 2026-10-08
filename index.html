@@ -362,18 +362,24 @@
     /* Tables */
     .section-card table {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       margin: 12px 0 16px;
       font-size: 12px;
       border: 1px solid var(--border-primary);
       border-radius: 6px;
       overflow: hidden;
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
     .section-card th, .section-card td {
       border: 1px solid var(--border-primary);
       padding: 8px 12px;
       text-align: left;
       vertical-align: top;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      min-width: 0;
     }
     .section-card th {
       background: var(--bg-surface-active);
