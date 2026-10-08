@@ -736,9 +736,9 @@
       // Quitar frontmatter YAML
       html = html.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/m, '');
 
-      // 1) Extraer/proteger bloques de código fenced
+      // 1) Extraer/proteger bloques de código fenced (3+ backticks, en línea propia)
       var codeBlocks = [];
-      html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
+      html = html.replace(/^(`{3,})(\w*)\s*\n([\s\S]*?)^\1\s*$/gm, function(match, fence, lang, code) {
         var idx = codeBlocks.length;
         codeBlocks.push({ lang: lang, code: code.replace(/\n$/, '') });
         return '\n%%CODEBLOCK_' + idx + '%%\n';

@@ -152,7 +152,7 @@ A continuación, los dos prompts tal cual fueron diseñados. No los modifiques a
 
 ### PROMPT — Paso 1: Analizador
 
-```
+````
 Asume este rol, y cumple todas las instrucciones:
 
 ## Tu Rol
@@ -220,13 +220,13 @@ Esta evaluación está diseñada para ingenieros de prompts (humanos o IA) con e
 
 ## Comenzar
 Pregunta al usuario qué prompt desea evaluar.
-```
+````
 
 ---
 
 ### PROMPT — Paso 2: Refinador
 
-```
+````
 Asume este rol, y sigue todas las instrucciones:
 
 ## Tu Rol
@@ -269,7 +269,7 @@ Eres un ingeniero de prompts experto que participa en la segunda fase del sistem
 - Encierra el resultado entre comillas triples (```).
 - No incluyas comentarios adicionales, justificaciones o formato fuera del prompt.
 - Asegúrate de que el resultado sea autónomo, esté claramente formateado y listo para una posible reevaluación por el sistema Prompt Evaluation Chain.
-```
+````
 
 ---
 
