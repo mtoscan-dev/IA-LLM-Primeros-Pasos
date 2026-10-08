@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crash Course IA/LLM — Soberanía Digital</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+
+    /* === Design Tokens (promptVault / Soberanía Digital) === */
+    :root {
+      --bg-page: #030712;
+      --bg-surface: #111827;
+      --bg-surface-hover: #1f2937;
+      --bg-surface-active: #374151;
+      --border-primary: #1f2937;
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #4b5563;
+      --acc-primary: #22c55e;
+      --acc-primary-glow: rgba(34, 197, 94, 0.2);
+      --hermes-card-bg: rgba(17, 24, 39, 0.5);
+      --hermes-card-border: rgba(255, 255, 255, 0.1);
+      --hermes-status-online: #22c55e;
+      --hermes-status-busy: #f59e0b;
+      --hermes-status-error: #ef4444;
+      --hermes-status-idle: #6b7280;
+      --hermes-transition-fast: 150ms;
+      --hermes-transition-normal: 300ms;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      display: flex;
+      min-height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* === Scrollbar === */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-page); }
+    ::-webkit-scrollbar-thumb { background: var(--bg-surface-active); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* === Selection === */
+    ::selection { background-color: #22c55e40; color: #22c55e; }
+
+    /* === Sidebar === */
+    .sidebar {
+      width: 300px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-primary);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .sidebar-header {
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid var(--border-primary);
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-brand-icon {
+      padding: 6px;
+      background: var(--acc-primary-glow);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 6px;
+      color: var(--acc-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sidebar-brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-brand-name {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--acc-primary);
+      text-transform: uppercase;
+      text-shadow: 0 0 10px currentColor;
+    }
+
+    .sidebar-brand-sub {
+      font-size: 9px;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .sidebar-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-top: 6px;
+    }
+
+    /* Search */
+    .search-wrap { padding: 12px 18px; border-bottom: 1px solid var(--border-primary); }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--bg-page);
+      border: 1px solid var(--border-primary);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 12px;
+      outline: none;
+      transition: border-color var(--hermes-transition-fast), box-shadow var(--hermes-transition-fast);
+    }
+    .search-input:focus {
+      border-color: var(--acc-primary);
+      box-shadow: 0 0 0 2px var(--acc-primary-glow);
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+
+    /* Progress */
+    .progress-wrap {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-primary);
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar-bg {
+      height: 3px;
+      background: var(--bg-surface-active);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--acc-primary);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 8px var(--acc-primary-glow);
+    }
+
+    /* Chapter list */
+    .chapters { padding: 8px 0; flex: 1; overflow-y: auto; }
+
+    .chapter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      cursor: pointer;
+      transition: background var(--hermes-transition-fast), border-color var(--hermes-transition-fast);
+      border-left: 3px solid transparent;
+    }
+    .chapter:hover { background: var(--bg-surface-hover); }
+    .chapter.active {
+      background: var(--bg-surface-hover);
+      border-left-color: var(--acc-primary);
+    }
+
+    .chapter-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg-surface-active);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+      transition: all var(--hermes-transition-fast);
+    }
+    .chapter.active .chapter-num {
+      background: var(--acc-primary);
+      color: var(--bg-page);
+      box-shadow: 0 0 10px var(--acc-primary-glow);
+    }
+
+    .chapter-title {
+      font-size: 12px;
+      font-weight: 500;
+      flex: 1;
+      line-height: 1.4;
+      color: var(--text-secondary);
+      transition: color var(--hermes-transition-fast);
+    }
+    .chapter.active .chapter-title { color: var(--text-primary); }
+
+    .chapter-status {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+    .chapter-status.ok {
+      background: rgba(34, 197, 94, 0.12);
+      color: var(--hermes-status-online);
+    }
+    .chapter-status.pending {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--hermes-status-busy);
+    }
+
+    /* Sidebar footer */
+    .sidebar-footer {
+      padding: 14px 18px;
+      border-top: 1px solid var(--border-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-footer-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--hermes-status-online);
+      box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+    }
+
+    .sidebar-footer-text {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* === Main === */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--bg-page);
+    }
+
+    .content-header {
+      padding: 28px 36px 20px;
+      border-bottom: 1px solid var(--border-primary);
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+    }
+
+    .content-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .content-header p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      max-width: 600px;
+      line-height: 1.5;
+    }
+
+    .content-body {
+      flex: 1;
+      padding: 28px 36px;
+      overflow-y: auto;
+      max-width: 780px;
+      width: 100%;
+    }
+
+    /* === Section Card (glassmorphism) === */
+    .section-card {
+      background: var(--hermes-card-bg);
+      border: 1px solid var(--hermes-card-border);
+      border-radius: 10px;
+      padding: 28px;
+      backdrop-filter: blur(8px);
+    }
+
+    .section-card h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 28px;
+      margin-bottom: 10px;
+      color: var(--acc-primary);
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 10px var(--acc-primary-glow);
+    }
+    .section-card h1:first-child { margin-top: 0; }
+
+    .section-card h2 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-top: 24px;
+      margin-bottom: 8px;
+      color: var(--acc-primary);
+      letter-spacing: -0.01em;
+    }
+    .section-card h2:first-child { margin-top: 0; }
+
+    .section-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 18px;
+      margin-bottom: 6px;
+      color: var(--text-primary);
+    }
+    .section-card h3:first-child { margin-top: 0; }
+
+    .section-card h4 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 14px;
+      margin-bottom: 4px;
+      color: var(--text-secondary);
+    }
+
+    .section-card p {
+      font-size: 13px;
+      line-height: 1.7;
+      margin-bottom: 10px;
+      color: var(--text-secondary);
+    }
+
+    .section-card ul, .section-card ol {
+      margin: 0 0 10px 18px;
+    }
+    .section-card li {
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 4px;
+      color: var(--text-secondary);
+    }
+
+    /* Tables */
+    .section-card table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 16px;
+      font-size: 12px;
+      border: 1px solid var(--border-primary);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .section-card th, .section-card td {
+      border: 1px solid var(--border-primary);
+      padding: 8px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .section-card th {
+      background: var(--bg-surface-active);
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .section-card td {
+      color: var(--text-secondary);
+    }
+
+    /* Code */
+    .section-card code {
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 11px;
+      background: var(--bg-surface-active);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--acc-primary);
+    }
+
+    .section-card pre {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-primary);
+      border-radius: 8px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.6;
+      margin: 10px 0 14px;
+    }
+    .section-card pre code {
+      background: none;
+      padding: 0;
+      font-size: 12px;
+      color: var(--text-primary);
+    }
+
+    /* Blockquote */
+    .section-card blockquote {
+      border-left: 3px solid var(--acc-primary);
+      padding: 10px 16px;
+      margin: 12px 0;
+      background: var(--acc-primary-glow);
+      border-radius: 0 6px 6px 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .section-card strong { color: var(--text-primary); font-weight: 600; }
+    .section-card em { color: var(--text-muted); font-style: italic; }
+
+    .section-card hr {
+      border: none;
+      border-top: 1px solid var(--border-primary);
+      margin: 20px 0;
+    }
+
+    /* Links */
+    .section-card a {
+      color: var(--acc-primary);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color var(--hermes-transition-fast);
+    }
+    .section-card a:hover {
+      border-bottom-color: var(--acc-primary);
+      text-shadow: 0 0 8px var(--acc-primary-glow);
+    }
+
+    /* Empty state */
+    .empty-state {
+      padding: 80px 36px;
+      text-align: center;
+    }
+
+    .empty-state-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: var(--acc-primary-glow);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--acc-primary);
+      font-size: 24px;
+      text-shadow: 0 0 10px currentColor;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    /* === Blink cursor === */
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+    .animate-blink { animation: blink 1s infinite; }
+
+    /* === Flicker on hover === */
+    @keyframes flicker {
+      0% { opacity: 0.97; }
+      5% { opacity: 0.85; }
+      10% { opacity: 0.9; }
+      15% { opacity: 0.1; }
+      20% { opacity: 0.95; }
+      100% { opacity: 1; }
+    }
+    .terminal-flicker:hover {
+      animation: flicker 0.15s infinite;
+      text-shadow: 0 0 8px currentColor;
+    }
+
+    /* === Reduced motion (WCAG 2.2 AA) === */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* === Focus visible (WCAG 2.2 AA) === */
+    a:focus-visible,
+    button:focus-visible,
+    .chapter:focus-visible,
+    .search-input:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--acc-primary);
+    }
+
+    /* === Responsive === */
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 50vh;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid var(--border-primary);
+      }
+      .chapters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        padding: 8px 12px;
+        overflow-y: visible;
+      }
+      .chapter {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 8px 12px;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+      }
+      .chapter.active {
+        border-left: none;
+        border-bottom-color: var(--acc-primary);
+      }
+      .chapter-status { display: none; }
+      .content-body { padding: 16px; max-width: 100%; }
+      .section-card { padding: 18px; }
+      .content-header { padding: 18px 16px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" x2="20" y1="19" y2="19"></line>
+          </svg>
+        </div>
+        <div class="sidebar-brand-text">
+          <span class="sidebar-brand-name">Soberania Digital</span>
+          <span class="sidebar-brand-sub">Introducción a IA / LLM</span>
+        </div>
+      </div>
+      <p class="sidebar-desc">Optimización de tokens, contexto y alucinaciones</p>
+    </div>
+
+    <div class="search-wrap">
+      <input type="text" class="search-input" placeholder="$ buscar en el curso…" id="search" aria-label="Buscar en el curso">
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Progreso</span>
+        <span id="progress-text">0 / 13</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <nav class="chapters" id="chapters" aria-label="Capítulos del curso"></nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-dot"></div>
+      <span class="sidebar-footer-text">Soberanía Digital — 2026</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="content-header">
+      <h2 id="section-title">Seleccioná una sección<span class="animate-blink">_</span></h2>
+      <p id="section-subtitle">Usá la barra lateral para navegar por las 13 secciones del curso.</p>
+    </div>
+    <div class="content-body" id="content-body">
+      <div class="empty-state">
+        <div class="empty-state-icon">&gt;_</div>
+        <h3>Bienvenido al curso</h3>
+        <p>Tenés 13 secciones listas para leer. Cada una es autocontenida.<br>
+        El hilo conductor es la optimización de tokens, contexto y alucinaciones.</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const CHAPTERS = [
+      { num: '00', title: 'Qué son IA, LLM, tokens y ventana de contexto', file: '00-que-es-ia-llm-y-los-token.md', status: 'ok' },
+      { num: '01', title: 'Ingeniería básica de prompt', file: '01-ingenieria-basica-de-prompt.md', status: 'ok' },
+      { num: '02', title: 'Patrones avanzados y anti-patterns', file: '02-patrones-avanzados-y-anti-patterns.md', status: 'ok' },
+      { num: '03', title: 'Configuraciones clave en ChatGPT y Codex', file: '03-chatgpt-y-codex-config.md', status: 'ok' },
+      { num: '04', title: 'Configuraciones clave en Claude y Claude Code', file: '04-claude-y-claude-code.md', status: 'ok' },
+      { num: '05', title: 'Skills, comandos y plugins indispensables', file: '05-skills-comandos-plugins-indispensables.md', status: 'ok' },
+      { num: '06', title: 'Qué configurar antes de empezar (checklist)', file: '06-configura-esto-antes-de-empezar.md', status: 'ok' },
+      { num: '07', title: 'Qué debes evitar', file: '07-lo-que-debes-evitar.md', status: 'ok' },
+      { num: '08', title: 'OpenRouter y freeLLMAPI', file: '08-openrouter-y-freellmapi.md', status: 'ok' },
+      { num: '09', title: 'Extensiones de Chrome útiles', file: '09-extensiones-de-chrome.md', status: 'ok' },
+      { num: '10', title: 'Ollama y LLMs locales', file: '10-ollama-y-llm-local.md', status: 'ok' },
+      { num: '11', title: 'Comandos útiles en Windows, Mac y Linux', file: '11-comandos-util-en-Windows-Mac-Linux.md', status: 'ok' },
+      { num: '12', title: 'Recursos útiles y biblioteca', file: '12-recursos-y-biblioteca.md', status: 'ok' },
+    ];
+
+    const TOTAL = CHAPTERS.length;
+    let activeIndex = null;
+
+    // === mdToHtml — renderer corregido ===
+    // Orden: code fences → headings → hr → blockquotes → tables → lists → paragraphs → inline
+    function mdToHtml(md) {
+      if (!md) return '';
+      var html = md;
+
+      // Quitar frontmatter YAML
+      html = html.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/m, '');
+
+      // 1) Extraer/proteger bloques de código fenced
+      var codeBlocks = [];
+      html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
+        var idx = codeBlocks.length;
+        codeBlocks.push({ lang: lang, code: code.replace(/\n$/, '') });
+        return '\n%%CODEBLOCK_' + idx + '%%\n';
+      });
+
+      // 2) Horizontal rules
+      html = html.replace(/^[-*_]{3,}\s*$/gm, '<hr>');
+
+      // 3) Encabezados
+      html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+      html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+      html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+      html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+      // 4) Blockquotes — agrupar líneas contiguas
+      html = html.replace(/^> ?(.*)$/gm, '<BQ>$1</BQ>');
+      html = html.replace(/(<BQ>[\s\S]*?<\/BQ>(?:\n<BQ>[\s\S]*?<\/BQ>)*)/g, function(block) {
+        var content = block.replace(/<\/?BQ>/g, '').replace(/\n/g, '<br>');
+        return '<blockquote>' + content + '</blockquote>';
+      });
+
+      // 5) Tablas Markdown
+      var mdLines = html.split('\n');
+      var tableResult = [];
+      var tableRows = [];
+      for (var i = 0; i < mdLines.length; i++) {
+        var line = mdLines[i].trim();
+        if (/^\|(.+)\|$/.test(line)) {
+          var cells = line.split('|');
+          cells.shift(); cells.pop();
+          cells = cells.map(function(c) { return c.trim(); });
+          var nonEmpty = cells.filter(function(c) { return c !== ''; });
+          if (nonEmpty.length > 0 && nonEmpty.every(function(c) { return /^:?-+:?$/.test(c); })) {
+            continue; // skip separator
+          }
+          tableRows.push(cells);
+        } else {
+          if (tableRows.length > 0) {
+            tableResult.push(buildTable(tableRows));
+            tableRows = [];
+          }
+          tableResult.push(mdLines[i]);
+        }
+      }
+      if (tableRows.length > 0) {
+        tableResult.push(buildTable(tableRows));
+      }
+      html = tableResult.join('\n');
+
+      // 6) Listas
+      html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+      html = html.replace(/^\* (.+)$/gm, '<li>$1</li>');
+      html = html.replace(/((?:<li>.*<\/li>\n)*)<li>.*<\/li>/g, function(match) {
+        return '<ul>' + match + '</ul>';
+      });
+
+      html = html.replace(/^\s*(\d+)\. (.+)$/gm, '<li value="$1">$2</li>');
+      html = html.replace(/((?:<li value="\d+">.*<\/li>\n)*)<li value="\d+">.*<\/li>/g, function(match) {
+        return '<ol>' + match + '</ol>';
+      });
+
+      // 7) Párrafos
+      var blocks = html.split(/\n\n+/);
+      var expanded = [];
+      for (var i = 0; i < blocks.length; i++) {
+        var b = blocks[i].trim();
+        if (!b) continue;
+        var closeMatch = b.match(/^(<\/[^>]+>\s*)+/);
+        if (closeMatch && closeMatch[0].length < b.length) {
+          var closePart = closeMatch[0].trim();
+          var rest = b.substring(closeMatch[0].length).trim();
+          if (closePart) expanded.push(closePart);
+          if (rest) expanded.push(rest);
+        } else {
+          expanded.push(b);
+        }
+      }
+      html = expanded.map(function(b) {
+        if (!b) return '';
+        if (/^%%CODEBLOCK_\d+%%$/.test(b)) return b;
+        if (/^<\/?(?:h[1-6]|ul|ol|li|pre|blockquote|hr|table|tr|td|th|thead|tbody|div)[\s>\/]/i.test(b)) return b;
+        return '<p>' + b.replace(/\n/g, ' ') + '</p>';
+      }).join('\n');
+
+      // Limpiar <p> que envuelvan bloques (opening Y closing tags)
+      html = html.replace(/<p>(?=(?:<\/?(?:h[1-6]|ul|ol|li|pre|blockquote|hr|table|tr|td|th|thead|tbody|div))[\s>\/])/gi, '');
+      html = html.replace(/(<\/(?:h[1-6]|ul|ol|li|pre|blockquote|hr|table|tr|div|p)>)\s*<\/p>/gi, '$1');
+      html = html.replace(/(<\/(?:tbody|thead|td|th)>)\s*<\/p>/gi, '$1');
+      html = html.replace(/<p>\s*<\/p>/g, '');
+
+      // 8) Inline en párrafos, blockquotes, listas y headings
+      html = html.replace(/<p>([\s\S]*?)<\/p>/g, function(match, content) {
+        return '<p>' + applyInline(content) + '</p>';
+      });
+      html = html.replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, function(match, content) {
+        return '<blockquote>' + applyInline(content) + '</blockquote>';
+      });
+      html = html.replace(/<li(?:\s[^>]*)?>([\s\S]*?)<\/li>/g, function(match, content) {
+        return match.replace(content, applyInline(content));
+      });
+      html = html.replace(/<h([1-4])>([\s\S]*?)<\/h\1>/g, function(match, level, content) {
+        return '<h' + level + '>' + applyInline(content) + '</h' + level + '>';
+      });
+
+      // 9) Restaurar bloques de código
+      html = html.replace(/%%CODEBLOCK_(\d+)%%/g, function(match, idx) {
+        var block = codeBlocks[parseInt(idx)];
+        return '<pre><code>' + escapeHtml(block.code) + '</code></pre>';
+      });
+
+      // 10) Limpieza final
+      html = html.replace(/<p>\s*<\/p>/g, '');
+      html = html.replace(/<p>(<(?:h[1-6]|ul|ol|li|pre|blockquote|hr|table|tr|div)[\s>\/][\s\S]*?)<\/p>/gi, '$1');
+      html = html.replace(/(<\/(?:h[1-6]|ul|ol|li|pre|blockquote|hr|table|tr|div)>)<\/p>/gi, '$1');
+
+      return html;
+    }
+
+    function buildTable(rows) {
+      var tbl = '<table>';
+      for (var j = 0; j < rows.length; j++) {
+        var tag = (j === 0) ? 'th' : 'td';
+        tbl += '<tr>';
+        for (var k = 0; k < rows[j].length; k++) {
+          tbl += '<' + tag + '>' + applyInline(rows[j][k]) + '</' + tag + '>';
+        }
+        tbl += '</tr>';
+      }
+      tbl += '</table>';
+      return tbl;
+    }
+
+    function applyInline(text) {
+      var codeParts = [];
+      text = text.replace(/`([^`]+)`/g, function(m, code) {
+        var idx = codeParts.length;
+        codeParts.push('<code>' + escapeHtml(code) + '</code>');
+        return '%%INLINECODE_' + idx + '%%';
+      });
+
+      text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+      text = text.replace(/%%INLINECODE_(\d+)%%/g, function(m, idx) {
+        return codeParts[parseInt(idx)];
+      });
+
+      return text;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // === UI ===
+    function renderChapters() {
+      const container = document.getElementById('chapters');
+      container.innerHTML = CHAPTERS.map((ch, i) => {
+        const statusClass = ch.status === 'ok' ? 'ok' : 'pending';
+        const statusText = ch.status === 'ok' ? 'listo' : 'pend';
+        return `
+          <div class="chapter${activeIndex === i ? ' active' : ''}" data-index="${i}" tabindex="0" role="button" aria-label="Sección ${ch.num}: ${ch.title}">
+            <div class="chapter-num">${ch.num}</div>
+            <div class="chapter-title">${ch.title}</div>
+            <div class="chapter-status ${statusClass}">${statusText}</div>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.chapter').forEach(el => {
+        el.addEventListener('click', () => {
+          const idx = parseInt(el.dataset.index, 10);
+          loadChapter(idx);
+        });
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const idx = parseInt(el.dataset.index, 10);
+            loadChapter(idx);
+          }
+        });
+      });
+    }
+
+    async function loadChapter(index) {
+      activeIndex = index;
+      const ch = CHAPTERS[index];
+
+      document.querySelectorAll('.chapter').forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+      });
+
+      document.getElementById('section-title').innerHTML = '<span style="color:var(--acc-primary)">' + ch.num + '</span> — ' + ch.title;
+      document.getElementById('section-subtitle').textContent = 'Sección ' + (index + 1) + ' de ' + TOTAL + '. ' + (ch.status === 'ok' ? 'Contenido listo.' : 'Pendiente de investigación.');
+
+      const body = document.getElementById('content-body');
+
+      try {
+        const res = await fetch(ch.file);
+        if (!res.ok) throw new Error('No se pudo cargar ' + ch.file);
+        const md = await res.text();
+        const html = mdToHtml(md);
+        body.innerHTML = '<div class="section-card">' + html + '</div>';
+      } catch (err) {
+        body.innerHTML = `
+          <div class="section-card" style="text-align:center;padding:40px;">
+            <p style="font-size:13px;color:var(--text-secondary);">No se pudo cargar el archivo <code>${ch.file}</code>.</p>
+            <p style="font-size:11px;margin-top:8px;color:var(--text-muted);">${err.message}</p>
+            <p style="font-size:11px;margin-top:8px;color:var(--text-muted);">Serví los archivos con <code>python3 -m http.server</code> desde el mismo directorio.</p>
+          </div>
+        `;
+      }
+
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const done = CHAPTERS.filter(ch => ch.status === 'ok').length;
+      const pct = Math.round((done / TOTAL) * 100);
+      document.getElementById('progress-text').textContent = done + ' / ' + TOTAL;
+      document.getElementById('progress-fill').style.width = pct + '%';
+    }
+
+    function applySearch() {
+      const q = document.getElementById('search').value.toLowerCase().trim();
+      document.querySelectorAll('.chapter').forEach((el, i) => {
+        const ch = CHAPTERS[i];
+        const match = !q || ch.title.toLowerCase().includes(q) || ch.num.includes(q);
+        el.style.display = match ? 'flex' : 'none';
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderChapters();
+      updateProgress();
+      document.getElementById('search').addEventListener('input', applySearch);
+      loadChapter(0);
+    });
+  </script>
+</body>
+</html>
